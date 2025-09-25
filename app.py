@@ -84,4 +84,3 @@ if st.button("Start Live Translation", key="start_button"):
         loop = asyncio.get_event_loop()
         loop.create_task(process_audio())
         loop.run_until_complete(debug_run())
-
