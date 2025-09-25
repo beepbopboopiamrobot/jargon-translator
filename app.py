@@ -19,21 +19,23 @@ def expand_jargon(text):
 
 caption_box = st.empty()
 
-def handle_transcript(transcript: aai.RealtimeTranscript):
-    if transcript.text:
-        expanded = expand_jargon(transcript.text)
-        caption_box.markdown(f"**{expanded}**")
-
 if st.button("Start Live Translation"):
-    # Instead of asyncio.run, let SDK handle it
     transcriber = aai.RealtimeTranscriber(
-        on_transcript=handle_transcript,
         sample_rate=16000,
+        encoding="pcm16"
     )
-    with transcriber:
-        st.info("⚡ Listening… start speaking!")
-        transcriber.stream()  # blocking call handled by SDK
 
+    # Attach handlers
+    @transcriber.on("transcript")
+    def on_transcript(transcript: aai.RealtimeTranscript):
+        if transcript.text:
+            expanded = expand_jargon(transcript.text)
+            caption_box.markdown(f"**{expanded}**")
+
+    # This will block until stopped
+    with transcriber:
+        st.info("⚡ Listening… but not yet wired to browser mic")
+        transcriber.connect()
 
 if st.button("Start Live Translation"):
     asyncio.run(transcribe())
