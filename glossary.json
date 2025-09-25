@@ -1,7 +1,20 @@
 {
+  "RFI": "Request for Information",
   "GC": "General Contractor",
-  "GCGR": "General Conditions / General Requirements",
-  "SOV": "Schedule of Values",
-  "UoM": "Unit of Measure",
-  "BIM": "Building Information Modeling"
+  "GR": "General Requirements",
+  "BIM": "Building Information Modeling",
+  "CAD": "Computer-Aided Design",
+  "HVAC": "Heating, Ventilation, and Air Conditioning",
+  "MEP": "Mechanical, Electrical, and Plumbing",
+  "QA": "Quality Assurance",
+  "QC": "Quality Control",
+  "API": "Application Programming Interface",
+  "UI": "User Interface",
+  "UX": "User Experience",
+  "SQL": "Structured Query Language",
+  "AI": "Artificial Intelligence",
+  "ML": "Machine Learning",
+  "SaaS": "Software as a Service",
+  "ROI": "Return on Investment",
+  "ETA": "Estimated Time of Arrival"
 }
