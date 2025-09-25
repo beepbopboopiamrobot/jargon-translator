@@ -29,12 +29,21 @@ def expand_jargon(text: str) -> str:
 caption_box = st.empty()
 
 # -----------------------------
-# UI button + logic
+# Session state
 # -----------------------------
-if st.button("Start Live Translation", key="start_button"):
-    st.info("🎙️ Starting… allow mic access")
+if "translating" not in st.session_state:
+    st.session_state.translating = False
 
-    # Capture mic audio
+# -----------------------------
+# UI controls
+# -----------------------------
+if not st.session_state.translating:
+    if st.button("▶️ Start Live Translation"):
+        st.session_state.translating = True
+        st.experimental_rerun()
+else:
+    st.info("🎙️ Live translation is running… allow mic access")
+
     webrtc_ctx = webrtc_streamer(
         key="speech",
         mode=WebRtcMode.SENDONLY,
@@ -51,7 +60,6 @@ if st.button("Start Live Translation", key="start_button"):
             while True:
                 frames = webrtc_ctx.audio_receiver.get_frames(timeout=1)
                 if frames:
-                    st.write(f"Captured {len(frames)} frames")  # debug
                     audio_queue.put_nowait(frames[0].to_ndarray().tobytes())
 
         async def debug_run():
@@ -74,7 +82,6 @@ if st.button("Start Live Translation", key="start_button"):
                 async def receiver():
                     async for msg in ws:
                         data = json.loads(msg)
-                        st.write("From AssemblyAI:", data)  # debug
                         if "text" in data and data["text"]:
                             expanded = expand_jargon(data["text"])
                             caption_box.markdown(f"**{expanded}**")
@@ -84,3 +91,7 @@ if st.button("Start Live Translation", key="start_button"):
         loop = asyncio.get_event_loop()
         loop.create_task(process_audio())
         loop.run_until_complete(debug_run())
+
+    if st.button("⏹ Stop Live Translation"):
+        st.session_state.translating = False
+        st.experimental_rerun()
