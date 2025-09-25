@@ -5,10 +5,15 @@ import asyncio
 import websockets
 from streamlit_webrtc import webrtc_streamer, WebRtcMode
 
+# -----------------------------
 # Load glossary
+# -----------------------------
 with open("glossary.json") as f:
     glossary = json.load(f)
 
+# -----------------------------
+# Streamlit setup
+# -----------------------------
 st.set_page_config(page_title="Live Jargon Translator", layout="wide")
 st.title("🎤 Live Jargon Translator")
 st.caption("Browser mic → AssemblyAI Realtime → Expanded acronyms")
@@ -24,10 +29,12 @@ def expand_jargon(text: str) -> str:
 caption_box = st.empty()
 
 # -----------------------------
-# UI starts here
+# UI button + logic
 # -----------------------------
 if st.button("Start Live Translation", key="start_button"):
     st.info("🎙️ Starting… allow mic access")
+
+    # Capture mic audio
     webrtc_ctx = webrtc_streamer(
         key="speech",
         mode=WebRtcMode.SENDONLY,
@@ -77,3 +84,4 @@ if st.button("Start Live Translation", key="start_button"):
         loop = asyncio.get_event_loop()
         loop.create_task(process_audio())
         loop.run_until_complete(debug_run())
+
