@@ -1,3 +1,31 @@
+import streamlit as st
+import json
+import base64
+import asyncio
+import websockets
+from streamlit_webrtc import webrtc_streamer, WebRtcMode
+
+# Load glossary
+with open("glossary.json") as f:
+    glossary = json.load(f)
+
+st.set_page_config(page_title="Live Jargon Translator", layout="wide")
+st.title("🎤 Live Jargon Translator")
+st.caption("Browser mic → AssemblyAI Realtime → Expanded acronyms")
+
+API_KEY = st.secrets["ASSEMBLYAI_API_KEY"]
+URL = "wss://api.assemblyai.com/v2/realtime/ws?sample_rate=16000"
+
+def expand_jargon(text: str) -> str:
+    for term, meaning in glossary.items():
+        text = text.replace(term, f"{term} ({meaning})")
+    return text
+
+caption_box = st.empty()
+
+# -----------------------------
+# UI starts here
+# -----------------------------
 if st.button("Start Live Translation", key="start_button"):
     st.info("🎙️ Starting… allow mic access")
     webrtc_ctx = webrtc_streamer(
