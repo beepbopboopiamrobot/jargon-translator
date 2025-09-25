@@ -1,8 +1,9 @@
 import streamlit as st
-import openai
 import json
-import tempfile
-from streamlit_webrtc import webrtc_streamer, WebRtcMode, AudioProcessorBase
+import websocket
+import threading
+import base64
+import pyaudio
 
 # Load glossary
 with open("glossary.json") as f:
@@ -10,45 +11,49 @@ with open("glossary.json") as f:
 
 st.set_page_config(page_title="Live Jargon Translator", layout="wide")
 st.title("🎤 Live Jargon Translator")
-st.caption("Speak into your mic. Acronyms will be expanded automatically.")
+st.caption("Live speech → expanded acronyms (via AssemblyAI)")
 
-openai.api_key = st.secrets["OPENAI_API_KEY"]
+API_KEY = st.secrets["ASSEMBLYAI_API_KEY"]
+URL = "wss://api.assemblyai.com/v2/realtime/ws?sample_rate=16000"
 
-# Expand acronyms with glossary
+# Expand acronyms
 def expand_jargon(text):
     for term, meaning in glossary.items():
         text = text.replace(term, f"{term} ({meaning})")
     return text
 
-# Placeholder for live captions
+# Placeholder for captions
 caption_box = st.empty()
 
-class AudioProcessor(AudioProcessorBase):
-    def __init__(self):
-        self.text = ""
+def run():
+    ws = websocket.WebSocketApp(
+        URL,
+        header={"Authorization": API_KEY},
+        on_message=on_message,
+        on_error=lambda ws, e: st.error(f"Error: {e}"),
+        on_close=lambda ws, c, m: st.warning("Connection closed"),
+        on_open=on_open,
+    )
+    ws.run_forever()
 
-    def recv_audio(self, frame):
-        # Save audio chunk to a temporary file
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmpfile:
-            tmpfile.write(frame.to_ndarray().tobytes())
-            tmpfile.flush()
-            try:
-                # Send audio to Whisper API
-                with open(tmpfile.name, "rb") as audio_file:
-                    transcript = openai.audio.transcriptions.create(
-                        model="whisper-1",
-                        file=audio_file
-                    )
-                text = transcript.text
-                expanded = expand_jargon(text)
-                caption_box.markdown(f"**{expanded}**")
-            except Exception as e:
-                caption_box.write(f"Error: {e}")
-        return frame
+def on_message(ws, message):
+    data = json.loads(message)
+    if "text" in data and data["text"]:
+        expanded = expand_jargon(data["text"])
+        caption_box.markdown(f"**{expanded}**")
 
-webrtc_streamer(
-    key="speech",
-    mode=WebRtcMode.SENDONLY,
-    audio_processor_factory=AudioProcessor,
-    media_stream_constraints={"audio": True, "video": False}
-)
+def on_open(ws):
+    def send_audio():
+        p = pyaudio.PyAudio()
+        stream = p.open(format=pyaudio.paInt16,
+                        channels=1,
+                        rate=16000,
+                        input=True,
+                        frames_per_buffer=3200)
+        while True:
+            data = stream.read(3200)
+            ws.send(json.dumps({"audio_data": base64.b64encode(data).decode("utf-8")}))
+    threading.Thread(target=send_audio, daemon=True).start()
+
+if st.button("Start Live Translation"):
+    threading.Thread(target=run, daemon=True).start()
