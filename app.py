@@ -19,23 +19,29 @@ def expand_jargon(text):
 
 caption_box = st.empty()
 
-if st.button("Start Live Translation"):
+# Track state so we don’t re-run setup on each rerun
+if "started" not in st.session_state:
+    st.session_state["started"] = False
+
+def start_transcription():
     transcriber = aai.RealtimeTranscriber(
         sample_rate=16000,
         encoding="pcm16"
     )
 
-    # Attach handlers
     @transcriber.on("transcript")
     def on_transcript(transcript: aai.RealtimeTranscript):
         if transcript.text:
             expanded = expand_jargon(transcript.text)
             caption_box.markdown(f"**{expanded}**")
 
-    # This will block until stopped
     with transcriber:
-        st.info("⚡ Listening… but not yet wired to browser mic")
+        st.info("⚡ Listening… (but not yet connected to browser mic)")
         transcriber.connect()
 
-if st.button("Start Live Translation"):
-    asyncio.run(transcribe())
+# Button with unique key
+if st.button("Start Live Translation", key="start_button"):
+    if not st.session_state["started"]:
+        st.session_state["started"] = True
+        start_transcription()
+
