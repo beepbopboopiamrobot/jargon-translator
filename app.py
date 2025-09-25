@@ -40,7 +40,7 @@ if "translating" not in st.session_state:
 if not st.session_state.translating:
     if st.button("▶️ Start Live Translation"):
         st.session_state.translating = True
-        st.experimental_rerun()
+        st.rerun()
 else:
     st.info("🎙️ Live translation is running… allow mic access")
 
@@ -94,4 +94,4 @@ else:
 
     if st.button("⏹ Stop Live Translation"):
         st.session_state.translating = False
-        st.experimental_rerun()
+        st.rerun()
